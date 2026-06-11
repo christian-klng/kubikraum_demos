@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   DEMO_PASSWORD,
@@ -22,10 +22,15 @@ export async function login(
     return { error: "Ungültige Zugangsdaten." };
   }
 
+  // Secure nur, wenn die Anfrage tatsächlich über HTTPS kam (Proxy-Header von
+  // Traefik/Coolify) — über plain HTTP würde der Browser den Cookie verwerfen.
+  const isHttps =
+    (await headers()).get("x-forwarded-proto")?.startsWith("https") ?? false;
+
   (await cookies()).set(SESSION_COOKIE, await sessionToken(), {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     path: "/",
     maxAge: 60 * 60 * 8,
   });

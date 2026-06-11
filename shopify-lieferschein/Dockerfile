@@ -12,7 +12,8 @@ FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN pnpm build
+# public/ ist im Repo ggf. leer und fehlt dann im Checkout — Runner-Stage erwartet es
+RUN mkdir -p public && pnpm build
 
 FROM node:22-slim AS runner
 WORKDIR /app

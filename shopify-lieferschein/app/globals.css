@@ -70,6 +70,16 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Natives Select-Styling abschalten, Chevron im macOS-Stil (auf/ab) ergänzen */
+.select-control {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 6.5l3-3 3 3'/%3E%3Cpath d='M5 9.5l3 3 3-3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import type { SortKey } from "@/lib/db";
 
 const selectClass =
-  "rounded-(--radius-control) border border-border-subtle bg-surface px-3 py-1.5 text-sm outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-accent";
+  "select-control rounded-(--radius-control) border border-border-subtle bg-surface py-1.5 pl-3 pr-8 text-sm font-medium text-foreground outline-none transition-shadow hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-accent";
 
 export function ListControls({
   categories,

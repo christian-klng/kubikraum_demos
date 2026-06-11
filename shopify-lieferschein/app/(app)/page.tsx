@@ -1,13 +1,36 @@
 import Link from "next/link";
-import { getStats, listProducts, LOW_STOCK_THRESHOLD } from "@/lib/db";
+import {
+  getStats,
+  isSortKey,
+  listCategories,
+  listProducts,
+  LOW_STOCK_THRESHOLD,
+  SORT_OPTIONS,
+  type SortKey,
+} from "@/lib/db";
 import { formatDateTime, formatEuro, formatNumber } from "@/lib/format";
 import { ProductStatusPill } from "@/components/status-pill";
+import { ListControls } from "@/components/list-controls";
 
 export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ kategorie?: string; sortierung?: string }>;
+}) {
+  const params = await searchParams;
+  const categories = listCategories();
+  const category = categories.includes(params.kategorie ?? "")
+    ? (params.kategorie as string)
+    : "";
+  const sort: SortKey =
+    params.sortierung && isSortKey(params.sortierung)
+      ? params.sortierung
+      : "name";
+
   const stats = getStats();
-  const products = listProducts();
+  const products = listProducts({ category: category || undefined, sort });
   const syncedAt = products[0]?.synced_at;
 
   const statCards = [
@@ -65,57 +88,80 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      <section aria-label="Produkte">
-        <h2 className="mb-4 text-xl font-semibold tracking-tight">Produkte</h2>
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
-            <li key={product.id}>
-              <Link
-                href={`/produkte/${product.id}`}
-                className="card group block overflow-hidden transition-transform duration-200 ease-out hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <div
-                  className="flex h-28 items-center justify-center text-4xl"
-                  style={{
-                    background: `linear-gradient(135deg, ${product.color_from}, ${product.color_to})`,
-                  }}
-                  aria-hidden
+      <section aria-label="Produkte" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Produkte
+            <span className="tnum ml-2 text-base font-normal text-muted">
+              {category
+                ? `${formatNumber(products.length)} von ${formatNumber(stats.product_count)}`
+                : formatNumber(products.length)}
+            </span>
+          </h2>
+          <ListControls
+            categories={categories}
+            sortOptions={SORT_OPTIONS}
+            category={category}
+            sort={sort}
+          />
+        </div>
+
+        {products.length === 0 ? (
+          <div className="card p-8 text-center text-muted">
+            Keine Produkte in dieser Kategorie.
+          </div>
+        ) : (
+          <ul className="card divide-y divide-border-subtle overflow-hidden">
+            {products.map((product) => (
+              <li key={product.id}>
+                <Link
+                  href={`/produkte/${product.id}`}
+                  className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-accent-soft focus-visible:bg-accent-soft focus-visible:outline-none"
                 >
-                  <span className="opacity-80 transition-transform duration-200 ease-out group-hover:scale-110">
-                    🧦
+                  <span
+                    className="flex size-12 shrink-0 items-center justify-center rounded-(--radius-control) text-xl"
+                    style={{
+                      background: `linear-gradient(135deg, ${product.color_from}, ${product.color_to})`,
+                    }}
+                    aria-hidden
+                  >
+                    <span className="opacity-80">🧦</span>
                   </span>
-                </div>
-                <div className="flex flex-col gap-2 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-medium leading-snug">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">
                       {product.title}
-                    </h3>
+                    </span>
+                    <span className="block text-sm text-muted">
+                      {product.category}
+                    </span>
+                  </span>
+                  <span className="hidden sm:block">
                     <ProductStatusPill status={product.status} />
-                  </div>
-                  <p className="text-sm text-muted">{product.category}</p>
-                  <div className="mt-1 flex items-baseline justify-between">
-                    <span className="tnum font-semibold">
-                      {formatEuro(product.price_cents)}
-                    </span>
-                    <span
-                      className={`tnum text-sm ${
-                        product.total_stock === 0
-                          ? "text-danger"
-                          : product.low_stock_variants > 0
-                            ? "text-warning"
-                            : "text-muted"
-                      }`}
-                    >
-                      {product.total_stock === 0
-                        ? "Ausverkauft"
-                        : `${formatNumber(product.total_stock)} Paar · ${product.variant_count} Größen`}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  </span>
+                  <span
+                    className={`tnum hidden w-32 text-right text-sm md:block ${
+                      product.total_stock === 0
+                        ? "text-danger"
+                        : product.low_stock_variants > 0
+                          ? "text-warning"
+                          : "text-muted"
+                    }`}
+                  >
+                    {product.total_stock === 0
+                      ? "Ausverkauft"
+                      : `${formatNumber(product.total_stock)} Paar`}
+                  </span>
+                  <span className="tnum w-20 text-right font-semibold">
+                    {formatEuro(product.price_cents)}
+                  </span>
+                  <span className="text-muted" aria-hidden>
+                    ›
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </div>
   );

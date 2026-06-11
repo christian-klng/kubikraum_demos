@@ -283,7 +283,38 @@ export function getDb(): Database.Database {
   return globalThis.__demoDb;
 }
 
-export function listProducts(): ProductWithInventory[] {
+const SORT_CLAUSES = {
+  name: "p.title ASC",
+  "preis-auf": "p.price_cents ASC, p.title ASC",
+  "preis-ab": "p.price_cents DESC, p.title ASC",
+  "bestand-auf": "total_stock ASC, p.title ASC",
+  "bestand-ab": "total_stock DESC, p.title ASC",
+} as const;
+
+export type SortKey = keyof typeof SORT_CLAUSES;
+
+export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "name", label: "Name (A–Z)" },
+  { key: "preis-auf", label: "Preis (aufsteigend)" },
+  { key: "preis-ab", label: "Preis (absteigend)" },
+  { key: "bestand-auf", label: "Bestand (aufsteigend)" },
+  { key: "bestand-ab", label: "Bestand (absteigend)" },
+];
+
+export function isSortKey(value: string): value is SortKey {
+  return value in SORT_CLAUSES;
+}
+
+export function listProducts(
+  options: { category?: string; sort?: SortKey } = {}
+): ProductWithInventory[] {
+  const { category, sort = "name" } = options;
+  const params: (string | number)[] = [LOW_STOCK_THRESHOLD];
+  let where = "";
+  if (category) {
+    where = "WHERE p.category = ?";
+    params.push(category);
+  }
   return getDb()
     .prepare(
       `SELECT p.*,
@@ -292,10 +323,19 @@ export function listProducts(): ProductWithInventory[] {
               SUM(CASE WHEN v.stock < ? THEN 1 ELSE 0 END) AS low_stock_variants
        FROM products p
        LEFT JOIN variants v ON v.product_id = p.id
+       ${where}
        GROUP BY p.id
-       ORDER BY p.title`
+       ORDER BY ${SORT_CLAUSES[sort]}`
     )
-    .all(LOW_STOCK_THRESHOLD) as ProductWithInventory[];
+    .all(...params) as ProductWithInventory[];
+}
+
+export function listCategories(): string[] {
+  return (
+    getDb()
+      .prepare("SELECT DISTINCT category FROM products ORDER BY category")
+      .all() as { category: string }[]
+  ).map((row) => row.category);
 }
 
 export function getProduct(

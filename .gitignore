@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Next.js / Build-Output
+.next/
+out/
+dist/
+build/
+
+# Env-Dateien (echte Secrets; .env.example wird committet)
+.env
+.env.*
+!.env.example
+
+# Logs & Caches
+*.log
+.turbo/
+.cache/
+.eslintcache
+*.tsbuildinfo
+next-env.d.ts
+
+# Tests / Coverage
+coverage/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
